@@ -68,93 +68,8 @@ This system is designed with two key architectural layers: an overarching Enterp
 
 *This diagram illustrates the high-level interaction between agents, orchestration services, data platforms, and human interfaces.*
 
-```mermaid
-graph TD
-    subgraph "User & External Interfaces"
-        direction TB
-        UI_Portal[User Portal (Web/Power Apps)]
-        API_GW[API Gateway (Azure API Mgt)]
-        ExternalData[External Data Sources (APIs, Feeds)]
-    end
+![Enterprise Diagram](static/Enterprise_orchestration.svg)
 
-    subgraph "Orchestration & Integration Layer"
-        direction TB
-        Orchestrator[Workflow Orchestrator (Logic Apps / Durable Func)]
-        EventBus[Enterprise Service Bus (Azure Service Bus / Event Grid)]
-    end
-
-    subgraph "Core Agent Services (Microservices)"
-        direction LR
-        RiskAgent[Risk Modeling Agent]
-        DemandAgent[Demand Modeling Agent]
-        FraudAgent[Fraud Detection Agent]
-        ClaimsAgent[Claims Processor Agent]
-        UnderwritingAgent[Underwriting Agent]
-    end
-
-    subgraph "Supporting Services & Data"
-        direction TB
-        DataPlatform[Central Data Platform (Synapse, ADLS, SQL)]
-        Monitoring[Observability (Azure Monitor)]
-        Identity[Identity & Access (Azure AD / Entra ID)]
-        HumanTasks[Human Task Service]
-    end
-
-    %% Core Flows
-    UI_Portal -- Requests --> API_GW
-    ExternalData -- Ingest --> API_GW
-    API_GW -- Triggers/Data --> Orchestrator
-    API_GW -- Ingest Events --> EventBus
-
-    Orchestrator -- Commands/Tasks --> EventBus
-    Orchestrator -- Reads/Updates --> DataPlatform
-    EventBus -- Events/Commands --> RiskAgent
-    EventBus -- Events/Commands --> DemandAgent
-    EventBus -- Events/Commands --> FraudAgent
-    EventBus -- Events/Commands --> ClaimsAgent
-    EventBus -- Events/Commands --> UnderwritingAgent
-
-    RiskAgent -- Results --> EventBus
-    DemandAgent -- Results --> EventBus
-    FraudAgent -- Results/Alerts --> EventBus
-    ClaimsAgent -- Results/Status --> EventBus
-    UnderwritingAgent -- Results/Decisions --> EventBus
-
-    EventBus -- Agent Results/Events --> Orchestrator
-
-    %% Data Access by Agents
-    RiskAgent -- Reads/Writes --> DataPlatform
-    DemandAgent -- Reads/Writes --> DataPlatform
-    FraudAgent -- Reads/Writes --> DataPlatform
-    ClaimsAgent -- Reads/Writes --> DataPlatform
-    UnderwritingAgent -- Reads/Writes --> DataPlatform
-
-    %% Human Interaction Loop
-    Orchestrator -- Assign Task --> HumanTasks
-    HumanTasks -- Displays Task --> UI_Portal
-    UI_Portal -- Task Input/Decision --> HumanTasks
-    HumanTasks -- Task Result --> Orchestrator
-
-    %% Supporting Services Connections
-    API_GW -- Logs/Metrics --> Monitoring
-    Orchestrator -- Logs/Metrics/State --> Monitoring
-    RiskAgent -- Logs/Metrics --> Monitoring
-    DemandAgent -- Logs/Metrics --> Monitoring
-    FraudAgent -- Logs/Metrics --> Monitoring
-    ClaimsAgent -- Logs/Metrics --> Monitoring
-    UnderwritingAgent -- Logs/Metrics --> Monitoring
-
-    API_GW -- Authentication --> Identity
-    UI_Portal -- Authentication --> Identity
-    Orchestrator -- AuthZ (Managed ID) --> Identity
-    RiskAgent -- AuthZ (Managed ID) --> Identity
-    DemandAgent -- AuthZ (Managed ID) --> Identity
-    FraudAgent -- AuthZ (Managed ID) --> Identity
-    ClaimsAgent -- AuthZ (Managed ID) --> Identity
-    UnderwritingAgent -- AuthZ (Managed ID) --> Identity
-    DataPlatform -- Access Control --> Identity
-
-```
 ### 1. Enterprise Agent Orchestration Framework
 
 This framework focuses on the high-level, robust management and coordination of multiple specialized agent services within an enterprise context.
@@ -190,72 +105,9 @@ This framework focuses on the high-level, robust management and coordination of 
 
 *This diagram illustrates the internal components of an individual agent service (e.g., Claims Processor Agent) leveraging LangChain for LLM-driven control flow and task execution.*
 
-```mermaid
-graph TD
-    subgraph "Agent Service Boundary (e.g., Claims Processor)"
-        direction TB
+![Langchain Diagram](static/Langchain_orchestration.svg)
 
-        InputTrigger[API Request / Event Bus Message] --> InputParser[Input Parser/Validator]
 
-        subgraph "LangChain Core Logic"
-            direction TB
-            AgentExecutor[LangChain AgentExecutor] -- Thought/Action Plan --> LLM[LLM (Azure OpenAI)]
-            LLM -- Next Action/Response --> AgentExecutor
-            AgentExecutor -- Accesses/Updates --> Memory[Agent Memory (Stateful)]
-            Memory -- Loads/Saves --> MemoryStore[Persistent Memory Store (DB/Cache)]
-        end
-
-        InputParser -- Goal/Initial State --> AgentExecutor
-
-        subgraph "Agent Tools (LangChain Tools)"
-            direction LR
-            ToolRegistry[Tool Registry]
-            Tool_DB[DB Query Tool]
-            Tool_API[Internal/External API Tool]
-            Tool_Rule[Rules Engine Tool]
-            Tool_Human[Request Human Review Tool]
-            Tool_State[Persist/Resume State Tool]
-        end
-
-        AgentExecutor -- Selects & Uses --> ToolRegistry
-        ToolRegistry -- Provides --> Tool_DB
-        ToolRegistry -- Provides --> Tool_API
-        ToolRegistry -- Provides --> Tool_Rule
-        ToolRegistry -- Provides --> Tool_Human
-        ToolRegistry -- Provides --> Tool_State
-
-        subgraph "Interfaces to External Systems/Services"
-            direction TB
-            DataPlatform_IF[Data Platform Interface]
-            Service_APIs_IF[Other Service APIs Interface]
-            RulesEngine_IF[Rules Engine Interface]
-            HumanTasks_IF[Human Task Service Interface]
-            StateStore_IF[Persistent State Store Interface (CosmosDB, Redis)]
-        end
-
-        Tool_DB -- Calls --> DataPlatform_IF
-        Tool_API -- Calls --> Service_APIs_IF
-        Tool_Rule -- Calls --> RulesEngine_IF
-        Tool_Human -- Calls --> HumanTasks_IF
-        Tool_State -- Calls --> StateStore_IF
-
-        AgentExecutor -- Final Answer/Status --> OutputFormatter[Output Formatter]
-        OutputFormatter -- API Response / Event Bus Message --> OutputResponse[Response/Event]
-
-    end
-
-    %% Connections to Wider Enterprise Components (Outside Agent Boundary)
-    DataPlatform_IF --> DataPlatform[(Enterprise Data Platform)]
-    Service_APIs_IF --> API_GW[(Enterprise API Gateway)]
-    HumanTasks_IF --> HumanTasks[(Enterprise Human Task Service)]
-    StateStore_IF --> StateStore_DB[(Cosmos DB / Redis Cache)]
-
-    %% Simplified connection to Orchestrator for State
-    StateStore_IF -- Linked via Workflow ID --> Orchestrator[(Enterprise Orchestrator State)]
-```
-*(Note: To view this Mermaid diagram correctly, you might need a browser extension or use a platform that renders Mermaid.)*
-
----
 ### 2. Langchain Agent Orchestration Framework  (this will be continually updated)
 This framework focuses on empowering *individual* agent services with advanced AI capabilities, particularly LLM-driven reasoning and dynamic task execution.
 
