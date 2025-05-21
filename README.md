@@ -186,7 +186,7 @@ This framework focuses on the high-level, robust management and coordination of 
 
 ---
 
-### 2. LangChain Multi-Agent Framework (Internal Agent Architecture)
+### 2. LangChain LLM Multi-Agent Framework (Internal Agent Architecture)
 
 *This diagram illustrates the internal components of an individual agent service (e.g., Claims Processor Agent) leveraging LangChain for LLM-driven control flow and task execution.*
 
